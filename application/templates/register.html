@@ -8,15 +8,33 @@
     </div>
     <div class="form-group">
       {{ form.email.label }} {{ form.email(class="form-control") }}
+      {% for error in form.email.errors %}
+      <span style="color: red;">{{ error }}</span><br>
+      {% endfor %}
     </div>
     <div class="form-group">
       {{ form.password.label }} {{ form.password(class="form-control") }}
+      {% for error in form.password.errors %}
+      <span style="color: red;">{{ error }}</span><br>
+      {% endfor %}
     </div>
     <div class="form-group">
       {{ form.password2.label }} {{ form.password2(class="form-control") }}
+      {% for error in form.password2.errors %}
+      <span style="color: red;">{{ error }}</span><br>
+      {% endfor %}
     </div>
     <div class="form-group">
       {{ form.submit(class="btn btn-primary") }}
     </div>
   </form>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 {% endblock %}
