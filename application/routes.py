@@ -2,8 +2,55 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from application import app, db
 from application.forms import LoginForm, RegistrationForm, ProductForm
-from application.models import User, Product
+from application.models import User, Product, Category
 from urllib.parse import urlparse
+from functools import wraps
+
+
+def admin_required(func):
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if not current_user.is_admin:
+            return redirect(url_for('index'))
+        return func(*args, **kwargs)
+    return decorated_view
+
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    return render_template('admin_dashboard.html')
+
+
+@app.route('/admin/products')
+@login_required
+@admin_required
+def admin_products():
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    products = Product.query.all()
+    return render_template('admin_products.html', products=products)
+
+
+@app.route('/admin/products/add', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_add_product():
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    form = ProductForm()
+    if form.validate_on_submit():
+        product = Product(name=form.name.data, description=form.description.data,
+                          price=form.price.data, stock=form.stock.data,
+                          category_id=form.category.data.id)
+        db.session.add(product)
+        db.session.commit()
+        flash('Product added successfully!', 'success')
+        return redirect(url_for('admin_products'))
+    return render_template('admin_add_product.html', form=form)
 
 
 @app.route('/')
@@ -61,20 +108,3 @@ def register():
         return redirect(url_for('index'))
     return render_template('register.html', title='Register', form=form)
 
-
-@app.route('/product/create', methods=['GET', 'POST'])
-def create_product():
-    form = ProductForm()
-    if form.validate_on_submit():
-        product = Product(
-            name=form.name.data,
-            description=form.description.data,
-            price=form.price.data,
-            stock=form.stock.data,
-            category_id=form.category_id.data
-        )
-        db.session.add(product)
-        db.session.commit()
-        flash('Product created successfully!')
-        return redirect(url_for('index'))
-    return render_template('create_product.html', form=form)
